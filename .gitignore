@@ -1,0 +1,33 @@
+# Entorno virtual
+venv/
+.venv/
+
+# Python cache
+__pycache__/
+*.py[cod]
+*.egg-info/
+
+# Dataset (se descarga en ejecución)
+data/coffee_beans/
+
+# Modelos entrenados (se generan en ejecución)
+saved_models/
+
+# Reportes y gráficas generadas
+results/
+
+# Credenciales Kaggle — NUNCA subir
+kaggle.json
+.kaggle/
+*.env
+
+# IDE
+.vscode/settings.json
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
