@@ -61,11 +61,12 @@ class CoffeeBeanApp(tk.Tk):
         self.resizable(False, False)
 
         self._img: Optional[np.ndarray] = None
+        self._img_preprocessed: Optional[np.ndarray] = None
         self._descriptor = tk.StringVar(value="HOG")
         self._model      = tk.StringVar(value="SVM")
 
         self._build_ui()
-        self._center(860, 560)
+        self._center(1200, 750)
 
     # ── Construcción UI ───────────────────────────────────────────────────────
 
@@ -86,17 +87,34 @@ class CoffeeBeanApp(tk.Tk):
 
     def _build_image_panel(self, parent: tk.Frame) -> None:
         card = tk.Frame(parent, bg=C["card"], padx=10, pady=10)
-        card.pack(side="left", fill="y")
-        tk.Label(card, text="Imagen cargada", font=F_LABEL,
+        card.pack(side="left", fill="both")
+        
+        # Columna izquierda: Imagen original
+        left = tk.Frame(card, bg=C["card"])
+        left.pack(side="left", padx=(0, 10), anchor="n")
+        tk.Label(left, text="Imagen original", font=F_LABEL,
                  bg=C["card"], fg=C["muted"]).pack(pady=(0, 6))
-        self._canvas = tk.Canvas(card, width=PREVIEW, height=PREVIEW,
+        self._canvas = tk.Canvas(left, width=PREVIEW, height=PREVIEW,
                                  bg=C["bg"], highlightthickness=1,
                                  highlightbackground=C["border"])
         self._canvas.pack()
         self._draw_placeholder()
-        tk.Button(card, text="📂  Cargar imagen",
+        tk.Button(left, text="📂  Cargar imagen",
                   command=self._load_image,
                   **self._btn(C["accent"])).pack(fill="x", pady=(10, 0))
+        
+        # Columna derecha: Imagen preprocesada
+        right = tk.Frame(card, bg=C["card"])
+        right.pack(side="left", anchor="n")
+        tk.Label(right, text="Imagen preprocesada", font=F_LABEL,
+                 bg=C["card"], fg=C["muted"]).pack(pady=(0, 6))
+        self._canvas_preprocessed = tk.Canvas(right, width=PREVIEW, height=PREVIEW,
+                                              bg=C["bg"], highlightthickness=1,
+                                              highlightbackground=C["border"])
+        self._canvas_preprocessed.pack()
+        self._draw_placeholder_preprocessed()
+        # Espacio invisible para alineación
+        tk.Frame(right, height=37, bg=C["card"]).pack(fill="x", pady=(10, 0))
 
     def _build_controls_panel(self, parent: tk.Frame) -> None:
         panel = tk.Frame(parent, bg=C["bg"])
@@ -174,6 +192,8 @@ class CoffeeBeanApp(tk.Tk):
             return
         try:
             preprocessed  = apply_gaussian(self._img.copy())
+            self._img_preprocessed = preprocessed
+            self._render_preprocessed(preprocessed)
             features       = self._extract_features(preprocessed)
             y_pred, probs  = self._run_model(features)
             self._show_result(int(y_pred[0]), probs[0])
@@ -218,10 +238,21 @@ class CoffeeBeanApp(tk.Tk):
         self._canvas.create_image(PREVIEW // 2, PREVIEW // 2, anchor="center", image=photo)
         self._canvas._photo = photo
 
+    def _render_preprocessed(self, img: np.ndarray) -> None:
+        pil   = Image.fromarray(img).resize((PREVIEW, PREVIEW), Image.LANCZOS)
+        photo = ImageTk.PhotoImage(pil)
+        self._canvas_preprocessed.create_image(PREVIEW // 2, PREVIEW // 2, anchor="center", image=photo)
+        self._canvas_preprocessed._photo = photo
+
     def _draw_placeholder(self) -> None:
         self._canvas.create_text(PREVIEW // 2, PREVIEW // 2,
                                  text="☕\nSin imagen", fill=C["muted"],
                                  font=("Georgia", 13), justify="center")
+
+    def _draw_placeholder_preprocessed(self) -> None:
+        self._canvas_preprocessed.create_text(PREVIEW // 2, PREVIEW // 2,
+                                              text="⏳\nClasificar", fill=C["muted"],
+                                              font=("Georgia", 13), justify="center")
 
     def _section(self, parent, text: str) -> None:
         tk.Label(parent, text=text, font=F_SEC,
